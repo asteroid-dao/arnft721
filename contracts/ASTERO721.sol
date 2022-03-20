@@ -46,14 +46,10 @@ contract ASTERO721 is ERC721, ERC721Enumerable, ERC721URIStorage, Pausable, Acce
     _unpause();
   }
   
-  function compare(string memory a, string memory b) internal pure returns (bool) {
-    return (keccak256(abi.encodePacked((a))) == keccak256(abi.encodePacked((b))));
-  }
-  
-  function mint(string memory short_id, string memory long_id, string memory arweave_tx, uint nonce, bytes memory signature) public onlyMinter returns (uint tokenId) {
+  function mint(string memory short_id, string memory long_id, string memory arweave_tx, uint nonce, bytes32 _extra, bytes memory signature) public onlyMinter returns (uint tokenId) {
     require(nonces[short_id] < nonce, "nonce must be greater");
     address author = ECDSA.recover(ECDSA.toEthSignedMessageHash(abi.encodePacked(short_id)), toBytes(long_id));
-    address to = ECDSA.recover(ECDSA.toEthSignedMessageHash(abi.encodePacked(long_id, "&", arweave_tx, "&", Strings.toString(nonce))), signature);
+    address to = ECDSA.recover(ECDSA.toEthSignedMessageHash(abi.encodePacked(toHex(keccak256(abi.encode(long_id, arweave_tx, nonce, _extra))))), signature);
     tokenId = _tokenIdCounter.current();
     bool exists = ids[short_id] > 0;
     nonces[short_id] = nonce;
@@ -72,26 +68,6 @@ contract ASTERO721 is ERC721, ERC721Enumerable, ERC721URIStorage, Pausable, Acce
     _setTokenURI(tokenId, arweave_tx);
   }
 
-  function toDec(bytes1 b) internal pure returns (uint8){
-    uint8 u8 = uint8(b);
-    uint8 n = u8 / 16 * 10 + u8 % 16;
-    return n < 40 ? n - 30 : n - 51;
-  }
-  
-  function toBytes(string memory a) internal pure returns (bytes memory){
-    bytes memory b = bytes(a);
-    uint8 n1;
-    bytes memory _bytes = new bytes(b.length / 2 - 1);
-    for(uint i = 2; i < b.length; i++){
-      if(i % 2 == 0){
-	n1 = toDec(b[i]);
-      }else{
-	_bytes[(i - 3) / 2] = bytes1(n1 * 16 + toDec(b[i]));
-      }
-    }
-    return _bytes;
-  }
-  
   function _beforeTokenTransfer(address from, address to, uint256 tokenId)
     internal
     whenNotPaused
@@ -122,6 +98,51 @@ contract ASTERO721 is ERC721, ERC721Enumerable, ERC721URIStorage, Pausable, Acce
     returns (bool)
   {
     return super.supportsInterface(interfaceId);
+  }
+
+  function compare(string memory a, string memory b) internal pure returns (bool) {
+    return (keccak256(abi.encodePacked((a))) == keccak256(abi.encodePacked((b))));
+  }
+
+  function toHex16 (bytes16 data) internal pure returns (bytes32 result) {
+    result = bytes32 (data) & 0xFFFFFFFFFFFFFFFF000000000000000000000000000000000000000000000000 |
+      (bytes32 (data) & 0x0000000000000000FFFFFFFFFFFFFFFF00000000000000000000000000000000) >> 64;
+    result = result & 0xFFFFFFFF000000000000000000000000FFFFFFFF000000000000000000000000 |
+      (result & 0x00000000FFFFFFFF000000000000000000000000FFFFFFFF0000000000000000) >> 32;
+    result = result & 0xFFFF000000000000FFFF000000000000FFFF000000000000FFFF000000000000 |
+      (result & 0x0000FFFF000000000000FFFF000000000000FFFF000000000000FFFF00000000) >> 16;
+    result = result & 0xFF000000FF000000FF000000FF000000FF000000FF000000FF000000FF000000 |
+      (result & 0x00FF000000FF000000FF000000FF000000FF000000FF000000FF000000FF0000) >> 8;
+    result = (result & 0xF000F000F000F000F000F000F000F000F000F000F000F000F000F000F000F000) >> 4 |
+      (result & 0x0F000F000F000F000F000F000F000F000F000F000F000F000F000F000F000F00) >> 8;
+    result = bytes32 (0x3030303030303030303030303030303030303030303030303030303030303030 +
+		      uint256 (result) +
+		      (uint256 (result) + 0x0606060606060606060606060606060606060606060606060606060606060606 >> 4 &
+		       0x0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F) * 39);
+  }
+
+  function toHex (bytes32 data) public pure returns (string memory) {
+    return string (abi.encodePacked ("0x", toHex16 (bytes16 (data)), toHex16 (bytes16 (data << 128))));
+  }
+ 
+  function toDec(bytes1 b) internal pure returns (uint8){
+    uint8 u8 = uint8(b);
+    uint8 n = u8 / 16 * 10 + u8 % 16;
+    return n < 40 ? n - 30 : n - 51;
+  }
+  
+  function toBytes(string memory a) internal pure returns (bytes memory){
+    bytes memory b = bytes(a);
+    uint8 n1;
+    bytes memory _bytes = new bytes(b.length / 2 - 1);
+    for(uint i = 2; i < b.length; i++){
+      if(i % 2 == 0){
+	n1 = toDec(b[i]);
+      }else{
+	_bytes[(i - 3) / 2] = bytes1(n1 * 16 + toDec(b[i]));
+      }
+    }
+    return _bytes;
   }
   
 }

@@ -42,9 +42,20 @@ describe("ASTERO721", function () {
       const _id = nanoid(9)
       const id = await p2.signMessage(_id)
       const nonce = i + 1
-      const str = [id, tx, nonce].join("&")
+      const uint = Math.ceil(Math.random() * 10)
+      const uint2 = Math.ceil(Math.random() * 10)
+      const extra = ethers.utils.keccak256(
+        ethers.utils.defaultAbiCoder.encode(["uint", "uint"], [uint, uint2])
+      )
+
+      const str = ethers.utils.keccak256(
+        ethers.utils.defaultAbiCoder.encode(
+          ["string", "string", "uint", "bytes32"],
+          [id, tx, nonce, extra]
+        )
+      )
       const sig = await p2.signMessage(str)
-      const _tx = await minter.mint(_id, id, tx, nonce, sig)
+      const _tx = await minter.mint(_id, id, tx, nonce, extra, sig, uint, uint2)
       await _tx.wait()
       const tokenUrl = await astero721.tokenURI(i)
       expect(tokenUrl).to.be.equal(`ar://${tx}`)
