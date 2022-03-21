@@ -33,31 +33,20 @@ const EIP712Domain = [
   { name: "verifyingContract", type: "address" },
 ]
 
-async function domainSeparator(name, version, chainId, verifyingContract) {
-  return (
-    "0x" +
-    ethSigUtil.TypedDataUtils.hashStruct(
-      "EIP712Domain",
-      { name, version, chainId, verifyingContract },
-      { EIP712Domain }
-    ).toString("hex")
-  )
-}
-
 describe("ASTERO721", function () {
   it("Should validate erc712", async function () {
     const [p, p2, p3, p4, p5] = await ethers.getSigners()
     const name = "Asteroid Articles"
     const version = "1"
-    const astero721 = await deploy("ASTERO721", name, "ASTEROARTICLES", version)
-    const minter = await deploy("Minter", a(astero721))
+    const astero721 = await deploy("ASTERO721", name, "ASTEROARTICLES")
+    const minter = await deploy("Minter", a(astero721), name, version)
     await astero721.grantRole(await astero721.MINTER_ROLE(), a(minter))
     let i = 0
     while (i < 10) {
       const tx = nanoid(40)
       const _id = nanoid(9)
       const nonce = i + 1
-      const chainId = (await astero721.getChainId()).toNumber()
+      const chainId = (await minter.getChainId()).toNumber()
       const message = {
         id: _id,
       }
@@ -66,7 +55,7 @@ describe("ASTERO721", function () {
           EIP712Domain,
           Article: [{ name: "id", type: "string" }],
         },
-        domain: { name, version, chainId, verifyingContract: a(astero721) },
+        domain: { name, version, chainId, verifyingContract: a(minter) },
         primaryType: "Article",
         message,
       }
@@ -95,7 +84,7 @@ describe("ASTERO721", function () {
             { name: "extra", type: "bytes32" },
           ],
         },
-        domain: { name, version, chainId, verifyingContract: a(astero721) },
+        domain: { name, version, chainId, verifyingContract: a(minter) },
         primaryType: "NFT",
         message: message2,
       }
@@ -112,6 +101,7 @@ describe("ASTERO721", function () {
         uint,
         uint2
       )
+      expect(await astero721.tokenURI(i + 1)).to.equal(`ar://${tx}`)
       i++
     }
   })
