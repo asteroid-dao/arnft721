@@ -3,6 +3,8 @@ const { ethers } = require("hardhat")
 const { splitEvery } = require("ramda")
 const { nanoid } = require("nanoid")
 const { from18, to18, a, b, deploy, deployJSON } = require("../lib/utils")
+const ethSigUtil = require("eth-sig-util")
+const Wallet = require("ethereumjs-wallet").default
 
 function toEthSignedMessageHash(messageHex) {
   const messageBuffer = Buffer.from(messageHex.substring(2), "hex")
@@ -24,41 +26,92 @@ const hexEncode = function (s) {
   return "0x" + result
 }
 
+const EIP712Domain = [
+  { name: "name", type: "string" },
+  { name: "version", type: "string" },
+  { name: "chainId", type: "uint256" },
+  { name: "verifyingContract", type: "address" },
+]
+
+async function domainSeparator(name, version, chainId, verifyingContract) {
+  return (
+    "0x" +
+    ethSigUtil.TypedDataUtils.hashStruct(
+      "EIP712Domain",
+      { name, version, chainId, verifyingContract },
+      { EIP712Domain }
+    ).toString("hex")
+  )
+}
+
 describe("ASTERO721", function () {
-  it("Should return the new greeting once it's changed", async function () {
+  it("Should validate erc712", async function () {
     const [p, p2, p3, p4, p5] = await ethers.getSigners()
-    const Astero721 = await ethers.getContractFactory("ASTERO721")
-    const astero721 = await Astero721.deploy(
-      "Asteroid Articles",
-      "ASTEROARTICLES"
-    )
-    await astero721.deployed()
-    const Minter = await ethers.getContractFactory("Minter")
-    const minter = await Minter.deploy(a(astero721))
+    const name = "Asteroid Articles"
+    const version = "1"
+    const astero721 = await deploy("ASTERO721", name, "ASTEROARTICLES", version)
+    const minter = await deploy("Minter", a(astero721))
     await astero721.grantRole(await astero721.MINTER_ROLE(), a(minter))
     let i = 0
     while (i < 10) {
       const tx = nanoid(40)
       const _id = nanoid(9)
-      const id = await p2.signMessage(_id)
       const nonce = i + 1
+      const chainId = (await astero721.getChainId()).toNumber()
+      const message = {
+        id: _id,
+      }
+      const data = {
+        types: {
+          EIP712Domain,
+          Article: [{ name: "id", type: "string" }],
+        },
+        domain: { name, version, chainId, verifyingContract: a(astero721) },
+        primaryType: "Article",
+        message,
+      }
+      const wallet = Wallet.generate()
+      const signature = ethSigUtil.signTypedMessage(wallet.getPrivateKey(), {
+        data,
+      })
       const uint = Math.ceil(Math.random() * 10)
       const uint2 = Math.ceil(Math.random() * 10)
       const extra = ethers.utils.keccak256(
         ethers.utils.defaultAbiCoder.encode(["uint", "uint"], [uint, uint2])
       )
-
-      const str = ethers.utils.keccak256(
-        ethers.utils.defaultAbiCoder.encode(
-          ["string", "string", "uint", "bytes32"],
-          [id, tx, nonce, extra]
-        )
+      const message2 = {
+        signature,
+        arweave_tx: tx,
+        nonce,
+        extra,
+      }
+      const data2 = {
+        types: {
+          EIP712Domain,
+          NFT: [
+            { name: "signature", type: "bytes" },
+            { name: "arweave_tx", type: "string" },
+            { name: "nonce", type: "uint256" },
+            { name: "extra", type: "bytes32" },
+          ],
+        },
+        domain: { name, version, chainId, verifyingContract: a(astero721) },
+        primaryType: "NFT",
+        message: message2,
+      }
+      const signature2 = ethSigUtil.signTypedMessage(wallet.getPrivateKey(), {
+        data: data2,
+      })
+      await minter.mint(
+        _id,
+        signature,
+        tx,
+        nonce,
+        extra,
+        signature2,
+        uint,
+        uint2
       )
-      const sig = await p2.signMessage(str)
-      const _tx = await minter.mint(_id, id, tx, nonce, extra, sig, uint, uint2)
-      await _tx.wait()
-      const tokenUrl = await astero721.tokenURI(i)
-      expect(tokenUrl).to.be.equal(`ar://${tx}`)
       i++
     }
   })

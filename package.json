@@ -14,6 +14,8 @@
   "dependencies": {
     "@openzeppelin/contracts": "^4.5.0",
     "big.js": "^6.1.1",
+    "eth-sig-util": "^3.0.1",
+    "ethereumjs-wallet": "^1.0.2",
     "nanoid": "^3.3.1",
     "ramda": "^0.28.0"
   },

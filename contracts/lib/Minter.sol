@@ -8,8 +8,8 @@ contract Minter {
   constructor(address _token) {
     token = _token;
   }
-  function mint (string memory short_id, string memory long_id, string memory arweave_tx, uint nonce, bytes32 _extra, bytes memory signature, uint _uint, uint _uint2) public {
+  function mint (string memory short_id, bytes memory signature, string memory arweave_tx, uint nonce, bytes32 _extra, bytes memory signature2, uint _uint, uint _uint2) public {
     require(_extra == keccak256(abi.encode(_uint, _uint2)), "extra parameters don't match");
-    IASTERO721(token).mint(short_id, long_id, arweave_tx, nonce, _extra, signature);
+    IASTERO721(token).mint(short_id, signature, arweave_tx, nonce, _extra, signature2);
   }
 }
