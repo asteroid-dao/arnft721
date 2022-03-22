@@ -40,6 +40,10 @@ contract ASTERO721 is ERC721, ERC721Royalty, ERC721Enumerable, ERC721URIStorage,
     _safeMint(to, tokenId);
     _setTokenURI(tokenId, arweave_tx);
   }
+
+  function setTokenURI(uint tokenId, string memory arweave_tx) public onlyRole(MINTER_ROLE) {
+    _setTokenURI(tokenId, arweave_tx);
+  }
   
   function _beforeTokenTransfer(address from, address to, uint256 tokenId)
     internal
