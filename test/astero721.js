@@ -6,26 +6,6 @@ const { from18, to18, a, b, deploy, deployJSON } = require("../lib/utils")
 const ethSigUtil = require("eth-sig-util")
 const Wallet = require("ethereumjs-wallet").default
 
-function toEthSignedMessageHash(messageHex) {
-  const messageBuffer = Buffer.from(messageHex.substring(2), "hex")
-  const prefix = Buffer.from(
-    `\u0019Ethereum Signed Message:\n${messageBuffer.length}`
-  )
-  return web3.utils.sha3(Buffer.concat([prefix, messageBuffer]))
-}
-const e = new TextEncoder()
-
-const hexEncode = function (s) {
-  var hex, i
-  var result = ""
-  for (i = 0; i < s.length; i++) {
-    hex = s.charCodeAt(i).toString(16)
-    result += ("0" + hex).slice(-2)
-  }
-
-  return "0x" + result
-}
-
 const EIP712Domain = [
   { name: "name", type: "string" },
   { name: "version", type: "string" },

@@ -13,7 +13,7 @@ contract Minter is EIP712 {
   mapping(uint => bytes32) public long_ids;
   mapping(bytes32 => string) public short_ids;
 
-  constructor(address _token, string memory _name, string memory _version)  EIP712(_name, _version) {
+  constructor(address _token, string memory _name, string memory _version) EIP712(_name, _version) {
     token = _token;
   }
   
