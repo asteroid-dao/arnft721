@@ -8,4 +8,6 @@ interface IASTERO721 is IERC721 {
   function tokenURI(uint256 tokenId) external view returns (string memory);
 
   function setTokenURI(uint tokenId, string memory arweave_tx) external;
+
+  function hashTypedDataV4(bytes32 structHash) external view returns (bytes32);
 }

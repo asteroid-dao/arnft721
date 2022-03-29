@@ -18,8 +18,8 @@ describe("ASTERO721", function () {
     const [p, p2, p3, p4, p5] = await ethers.getSigners()
     const name = "Asteroid Articles"
     const version = "1"
-    const astero721 = await deploy("ASTERO721", name, "ASTEROARTICLES")
-    const minter = await deploy("Minter", a(astero721), name, version)
+    const astero721 = await deploy("ASTERO721", name, "ASTEROARTICLES", version)
+    const minter = await deploy("Minter", a(astero721))
     await astero721.grantRole(await astero721.MINTER_ROLE(), a(minter))
     let i = 0
     while (i < 10) {
@@ -35,7 +35,7 @@ describe("ASTERO721", function () {
           EIP712Domain,
           Article: [{ name: "id", type: "string" }],
         },
-        domain: { name, version, chainId, verifyingContract: a(minter) },
+        domain: { name, version, chainId, verifyingContract: a(astero721) },
         primaryType: "Article",
         message,
       }
@@ -64,7 +64,7 @@ describe("ASTERO721", function () {
             { name: "extra", type: "bytes32" },
           ],
         },
-        domain: { name, version, chainId, verifyingContract: a(minter) },
+        domain: { name, version, chainId, verifyingContract: a(astero721) },
         primaryType: "NFT",
         message: message2,
       }

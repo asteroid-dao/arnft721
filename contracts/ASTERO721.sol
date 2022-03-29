@@ -9,14 +9,15 @@ import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
+import "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 
-contract ASTERO721 is ERC721, ERC721Royalty, ERC721Enumerable, ERC721URIStorage, Pausable, AccessControl, ERC721Burnable {
+contract ASTERO721 is ERC721, ERC721Royalty, ERC721Enumerable, ERC721URIStorage, Pausable, AccessControl, ERC721Burnable, EIP712 {
   using Counters for Counters.Counter;
   bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
   bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
   Counters.Counter private _tokenIdCounter;
 
-  constructor(string memory _name, string memory _symbol) ERC721(_name, _symbol) {
+  constructor(string memory _name, string memory _symbol, string memory _version) ERC721(_name, _symbol) EIP712(_name, _version){
     _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     _grantRole(PAUSER_ROLE, msg.sender);
     _grantRole(MINTER_ROLE, msg.sender);
@@ -41,6 +42,10 @@ contract ASTERO721 is ERC721, ERC721Royalty, ERC721Enumerable, ERC721URIStorage,
     _setTokenURI(tokenId, arweave_tx);
   }
 
+  function hashTypedDataV4(bytes32 structHash) public view returns (bytes32) {
+    return _hashTypedDataV4(structHash);
+  }
+  
   function setTokenURI(uint tokenId, string memory arweave_tx) public onlyRole(MINTER_ROLE) {
     _setTokenURI(tokenId, arweave_tx);
   }
