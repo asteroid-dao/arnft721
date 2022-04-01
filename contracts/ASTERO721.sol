@@ -16,15 +16,21 @@ contract ASTERO721 is ERC721, ERC721Royalty, ERC721Enumerable, ERC721URIStorage,
   bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
   bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
   Counters.Counter private _tokenIdCounter;
-
+  
+  string baseURI = "https://arweave.net/";
+  
   constructor(string memory _name, string memory _symbol, string memory _version) ERC721(_name, _symbol) EIP712(_name, _version){
     _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     _grantRole(PAUSER_ROLE, msg.sender);
     _grantRole(MINTER_ROLE, msg.sender);
   }
 
-  function _baseURI() internal pure override returns (string memory) {
-    return "ar://";
+  function _baseURI() internal view override returns (string memory) {
+    return baseURI;
+  }
+  
+  function setBaseURI(string memory _str) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    baseURI = _str;
   }
 
   function pause() public onlyRole(PAUSER_ROLE) {

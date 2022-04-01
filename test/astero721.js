@@ -81,7 +81,9 @@ describe("ASTERO721", function () {
         uint,
         uint2
       )
-      expect(await astero721.tokenURI(i + 1)).to.equal(`ar://${tx}`)
+      expect(await astero721.tokenURI(i + 1)).to.equal(
+        `https://arweave.net/${tx}`
+      )
       i++
     }
   })
